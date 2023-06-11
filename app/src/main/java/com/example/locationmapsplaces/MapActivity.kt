@@ -51,6 +51,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mMap: GoogleMap
     private lateinit var mFusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var mLocationManager:LocationManager
+    private var mLastLatitude:Double = 0.0
+    private var mLastLongitude:Double = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -121,33 +123,78 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             ) {
 
                 //execute our method for searching
-                geoLocate()
+                geoLocateByName()
+                geoLocateByDrag()
             }
 
             false
         }
     }
 
-    private fun geoLocate() {
-        Log.d(TAG, "geoLocate: geolocating")
+    private fun geoLocateByName() {
+        Log.d(TAG, "geoLocateByName: geolocating")
 
         val searchString = mSearchText.text.toString()
 
         val geocoder = Geocoder(this)
-        var list: List<Address> = ArrayList<Address>()
+        var locations: List<Address> = ArrayList<Address>()
         try {
-            list = geocoder.getFromLocationName(searchString, 1) as List<Address>
+            locations = geocoder.getFromLocationName(searchString, 1) as List<Address>
         } catch (e: IOException) {
-            Log.e(TAG, "geoLocate: IOException: ${e.message}")
+            Log.e(TAG, "geoLocateByName: IOException: ${e.message}")
         }
 
-        if (list.isNotEmpty()) {
-            val address = list[0]
+        if (locations.isNotEmpty()) {
+            val address = locations[0]
 
-            Log.d(TAG, "geoLocate: found a location: $address")
+            Log.d(TAG, "geoLocateByName: found a location: $address")
 //            Toast.makeText(this, address.toString(), Toast.LENGTH_SHORT).show()
 
             moveCamera(LatLng(address.latitude, address.longitude), DEFAULT_ZOOM, address.getAddressLine(0))
+        }
+    }
+
+    private fun geoLocateByDrag() {
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(mLastLatitude, mLastLongitude), DEFAULT_ZOOM))
+        mMap.setOnCameraIdleListener {
+            val lat = mMap.cameraPosition.target.latitude
+            val lng = mMap.cameraPosition.target.longitude
+            val addressTV = findViewById<TextView>(R.id.tv)
+
+            // Initializing Geocoder
+            val geocoder = Geocoder(this)
+            var addressString= ""
+
+            // Reverse-Geocoding starts
+            try {
+                val addressList: List<Address> = geocoder.getFromLocation(lat, lng, 1) as List<Address>
+
+                // use your lat, long value here
+                if (addressList != null && addressList.isNotEmpty()) {
+                    val address = addressList[0]
+                    val sb = StringBuilder()
+                    for (i in 0 until address.maxAddressLineIndex) {
+                        sb.append(address.getAddressLine(i)).append("\n")
+                    }
+
+                    // Various Parameters of an Address are appended
+                    // to generate a complete Address
+                    if (address.premises != null)
+                        sb.append(address.premises).append(", ")
+
+                    sb.append(address.subAdminArea).append("\n")
+                    sb.append(address.locality).append(", ")
+                    sb.append(address.adminArea).append(", ")
+                    sb.append(address.countryName).append(", ")
+                    sb.append(address.postalCode)
+
+                    addressString = sb.toString()
+                }
+            } catch (e: IOException) {
+                Toast.makeText(applicationContext,"Unable connect to Geocoder",Toast.LENGTH_LONG).show()
+            }
+
+            addressTV.text = "Lat: $lat \nLng: $lng \nAddress: $addressString"
         }
     }
 
@@ -160,7 +207,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             if (mLocationPermissionsGranted) {
 
                 val location = mFusedLocationProviderClient.lastLocation
-                location.addOnCompleteListener { task: Task<Location> ->
+                location.addOnCompleteListener() {  task: Task<Location> ->
                     if (task.isSuccessful) {
                         Log.d(TAG, "onComplete: found location!")
                         val currentLocation = task.result
@@ -194,6 +241,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
             "moveCamera: moving the camera to: lat: ${latLng.latitude}, lng: ${latLng.longitude}"
         )
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoom))
+        mLastLatitude = latLng.latitude
+        mLastLongitude = latLng.longitude
 
         if (title != MYLOCATION) {
             val options = MarkerOptions().position(latLng).title(title)

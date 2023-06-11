@@ -40,6 +40,43 @@
             android:imeOptions="actionSearch"
             android:textColor="#000"
             android:textSize="15sp" />
+
         </RelativeLayout>
+
+    <LinearLayout
+        android:layout_margin="20sp"
+        android:id="@+id/ll1"
+        android:layout_width="match_parent"
+        android:layout_height="100sp"
+        android:background="@drawable/shape"
+        android:layout_alignBottom="@id/map"
+        android:orientation="horizontal">
+
+        <!--TextView for displaying Lat and
+           Lng along with Address-->
+        <TextView
+            android:id="@+id/tv"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="10sp"
+            />
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/centerReferencePoint"
+        android:layout_width="0sp"
+        android:layout_height="0sp"
+        android:layout_centerInParent="true"/>
+
+    <!--This image is the Marker-->
+    <ImageView
+        android:id="@+id/marker"
+        android:layout_width="30sp"
+        android:layout_height="40sp"
+        android:src="@drawable/marker"
+        android:layout_centerInParent="true"
+        android:layout_above="@id/centerReferencePoint"
+        />
 
     </RelativeLayout>
